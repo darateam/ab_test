@@ -1,0 +1,15 @@
+.env
+.ab-test-state/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+service-account.json
+client_secret.json
+token.json
+credentials.json
+*.log

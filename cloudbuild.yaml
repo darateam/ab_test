@@ -1,0 +1,65 @@
+substitutions:
+  _REGION: asia-northeast3
+  _SERVICE: ab-landing
+  _REPO: arih
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 900s
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - landing/Dockerfile
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
+      - landing
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}
+
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        IMAGE=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID
+        gcloud run deploy ${_SERVICE} \
+          --project="$PROJECT_ID" \
+          --image="$$IMAGE" \
+          --region=${_REGION} \
+          --memory=256Mi \
+          --cpu=1 \
+          --min-instances=0 \
+          --max-instances=2 \
+          --timeout=60 \
+          --port=8080 \
+          --allow-unauthenticated \
+          --quiet
+        gcloud run services add-iam-policy-binding ${_SERVICE} \
+          --project="$PROJECT_ID" \
+          --region=${_REGION} \
+          --member=allUsers \
+          --role=roles/run.invoker \
+          --quiet \
+          || echo "allUsers 권한 바인딩을 건너뜁니다"
+        gcloud run services describe ${_SERVICE} \
+          --project="$PROJECT_ID" \
+          --region=${_REGION} \
+          --format='value(status.url)'
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$BUILD_ID
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
