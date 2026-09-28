@@ -343,6 +343,28 @@ def test_sales_requires_pixel(tmp_path):
     assert "픽셀" in report.results[0].message
 
 
+def test_cli_runs_only_the_named_test(monkeypatch, tmp_path, capsys):
+    monkeypatch.delenv("GOOGLE_SHEET_ID", raising=False)
+    monkeypatch.delenv("META_BUSINESS_ID", raising=False)
+    path = tmp_path / "ads.csv"
+    other = base_row(테스트명="겨울세일", 변형="A", 캠페인명="겨울세일_AB", 광고명="겨울세일_A", 소재파일="winter.png")
+    write_csv(path, [base_row(), base_row(변형="B", 광고명="여름세일_B", 소재파일="b.png"), other])
+    code = main(["run", "--sheet", str(path), "--test", "겨울세일"])
+    assert code == 0
+    output = capsys.readouterr().out
+    assert "겨울세일_AB" in output
+    assert "여름세일_AB" not in output
+
+
+def test_cli_rejects_an_unknown_test_name(monkeypatch, tmp_path, capsys):
+    monkeypatch.delenv("GOOGLE_SHEET_ID", raising=False)
+    path = tmp_path / "ads.csv"
+    write_csv(path, [base_row()])
+    code = main(["run", "--sheet", str(path), "--test", "없는실험"])
+    assert code == 2
+    assert "없는실험" in capsys.readouterr().out
+
+
 def test_cli_dry_run_on_template(monkeypatch, tmp_path):
     monkeypatch.delenv("GOOGLE_SHEET_ID", raising=False)
     monkeypatch.delenv("META_BUSINESS_ID", raising=False)

@@ -74,6 +74,13 @@ ab-test run
 ab-test run --apply
 ```
 
+시트에 실험이 여러 개면 테스트명으로 고릅니다. 이름을 빼면 시트에 있는 실험을 모두 실행합니다.
+
+```bash
+ab-test run --test 여름세일
+ab-test run --test 여름세일 --test 겨울세일 --apply
+```
+
 이미 만들어진 광고를 시트에서 `게시`로 바꿔 켜려면 다음을 사용합니다. 이 명령은 광고비를 지출할 수 있습니다.
 
 ```bash

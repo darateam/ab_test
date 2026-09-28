@@ -27,6 +27,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     run.add_argument("--sheet", help="로컬 CSV 경로. 지정하면 구글 시트 대신 이 파일을 읽습니다.")
     run.add_argument("--creatives", help="로컬 소재 폴더. 지정하면 드라이브 폴더 대신 사용합니다.")
+    run.add_argument(
+        "--test",
+        action="append",
+        default=[],
+        metavar="테스트명",
+        help="실행할 테스트명. 여러 번 쓰거나 쉼표로 구분합니다. 없으면 시트의 모든 실험을 실행합니다.",
+    )
     run.add_argument("--output", help="실행 결과를 저장할 JSON 경로")
 
     sub.add_parser("auth-google", help="내 구글 드라이브용 OAuth 토큰을 저장합니다.")
@@ -57,7 +64,10 @@ def _run(settings: Settings, args) -> int:
     settings.allow_active = bool(args.allow_active)
 
     table = _open_table(settings)
-    rows = table.load_rows()
+    rows = _select_tests(table.load_rows(), args.test)
+    selected_rows = {row.row_number for row in rows}
+    if args.test:
+        table.parse_issues = [issue for issue in table.parse_issues if issue.row_number in selected_rows]
     creatives = _open_creatives(settings) if settings.apply else None
     meta = _open_meta(settings) if settings.apply else None
     report = Runner(settings, meta=meta, creatives=creatives, writer=table).run(rows, table.parse_issues)
@@ -89,6 +99,20 @@ def _run(settings: Settings, args) -> int:
             encoding="utf-8",
         )
     return 0 if report.ok else 2
+
+
+def _select_tests(rows, names: list[str]):
+    wanted: list[str] = []
+    for name in names:
+        wanted.extend(part.strip() for part in name.split(",") if part.strip())
+    if not wanted:
+        return rows
+    selected = [row for row in rows if row.test_name in wanted]
+    found = {row.test_name for row in selected}
+    missing = [name for name in wanted if name not in found]
+    if missing:
+        raise ValueError("시트에 없는 테스트명입니다: " + ", ".join(missing))
+    return selected
 
 
 def _open_table(settings: Settings):
