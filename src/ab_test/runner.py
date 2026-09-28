@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 from ab_test.config import Settings
 from ab_test.drive import CreativeBlob
+from ab_test.video import jpeg_thumbnail
 from ab_test.meta import (
     ad_body,
     adset_body,
@@ -192,9 +193,10 @@ class Runner:
         blob = self.creatives.fetch(row.creative_drive_file)
         if not blob.is_video:
             return blob, None
-        if not row.thumbnail_drive_file:
-            raise ValueError("동영상 소재는 썸네일파일이 필요합니다.")
-        return blob, self.creatives.fetch(row.thumbnail_drive_file)
+        if row.thumbnail_drive_file:
+            return blob, self.creatives.fetch(row.thumbnail_drive_file)
+        stem = blob.name.rsplit(".", 1)[0]
+        return blob, CreativeBlob(name=f"{stem}.jpg", data=jpeg_thumbnail(blob.data, blob.name), mime="image/jpeg")
 
     def _ensure_campaign(self, plan: CampaignPlan) -> str:
         rows = _rows(plan)

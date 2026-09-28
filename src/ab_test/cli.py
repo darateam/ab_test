@@ -94,8 +94,14 @@ def _run(settings: Settings, args) -> int:
 def _open_table(settings: Settings):
     if settings.uses_google_sheet:
         from ab_test.google_io import open_google_sheet
+        from ab_test.public_sheet import open_public_google_sheet
 
-        return open_google_sheet(settings)
+        has_google_credentials = Path(settings.google_service_account_file).is_file() or Path(
+            settings.google_oauth_token_file
+        ).is_file()
+        if has_google_credentials:
+            return open_google_sheet(settings)
+        return open_public_google_sheet(settings.google_sheet_id)
     if not settings.sheet_path:
         raise ValueError("GOOGLE_SHEET_ID 또는 SHEET_PATH가 필요합니다.")
     path = Path(settings.sheet_path)

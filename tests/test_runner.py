@@ -264,17 +264,24 @@ def test_conflicting_objectives_block_the_whole_test(tmp_path):
     assert sum(1 for item in report.results if not item.ok) == 2
 
 
-def test_video_without_thumbnail_is_rejected_before_upload(tmp_path):
+def test_video_without_thumbnail_uses_a_generated_frame(tmp_path, monkeypatch):
     path = tmp_path / "ads.csv"
-    write_csv(path, [base_row(소재파일="clip.mp4")])
+    creatives = tmp_path / "creatives"
+    creatives.mkdir()
+    (creatives / "clip.mp4").write_bytes(b"video-bytes")
+    write_csv(path, [base_row(소재파일="clip.mp4", 썸네일파일="")])
+    monkeypatch.setattr("ab_test.runner.jpeg_thumbnail", lambda data, filename: b"jpeg-frame")
     table = CsvTable(path)
     meta = FakeMeta()
-    report = Runner(settings(apply=True), meta=meta, creatives=LocalCreativeStore(tmp_path), writer=table).run(
-        table.load_rows(), table.parse_issues
-    )
-    assert not report.ok
-    assert meta.calls == []
-    assert "썸네일" in report.results[0].message
+    report = Runner(
+        settings(apply=True, create_split_test=False, meta_business_id=""),
+        meta=meta,
+        creatives=LocalCreativeStore(creatives),
+        writer=table,
+    ).run(table.load_rows(), table.parse_issues)
+    assert report.ok, report.results
+    assert ("video", "clip.mp4", "video/mp4") in [(call[0], call[1], call[2]) for call in meta.calls if call[0] == "video"]
+    assert any(call[0] == "image" and call[1] == "clip.jpg" for call in meta.calls)
 
 
 def test_pause_and_activate_guard(tmp_path):

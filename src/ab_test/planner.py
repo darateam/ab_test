@@ -9,9 +9,6 @@ from ab_test.models import (
     Issue,
 )
 
-VIDEO_EXTENSIONS = (".mp4", ".mov", ".m4v")
-
-
 def split_percentages(count: int) -> list[int]:
     if count < 2 or count > 5:
         raise ValueError("A/B 실험은 변형이 2개에서 5개까지여야 합니다.")
@@ -85,8 +82,6 @@ def validate_create_row(row: AdRow, default_page_id: str) -> list[Issue]:
         messages.append("페이지 ID가 필요합니다. 시트 또는 META_PAGE_ID에 입력하세요.")
     if row.objective == "OUTCOME_SALES" and not row.pixel_id:
         messages.append("매출 목표는 픽셀 ID가 필요합니다.")
-    if _is_video_name(row.creative_drive_file) and not row.thumbnail_drive_file:
-        messages.append("동영상 소재는 썸네일파일이 필요합니다.")
     if row.start_date and row.end_date and row.start_date > row.end_date:
         messages.append("종료일은 시작일보다 빠를 수 없습니다.")
     return [Issue(message, row.test_name, row.row_number) for message in messages]
@@ -227,7 +222,3 @@ def _adset_signature(row: AdRow) -> tuple:
         row.page_id,
     )
 
-
-def _is_video_name(name: str) -> bool:
-    lowered = name.lower().split("?")[0]
-    return lowered.endswith(VIDEO_EXTENSIONS)

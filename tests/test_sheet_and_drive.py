@@ -1,3 +1,4 @@
+from ab_test.public_sheet import table_from_csv_text
 from ab_test.drive import parse_drive_ref
 from ab_test.google_io import GoogleSheetTable, spreadsheet_id
 from ab_test.sheet import CsvTable, column_letter, quote_sheet_title
@@ -64,6 +65,18 @@ def test_google_sheet_writes_result_columns_by_header_name():
     assert service._values.spreadsheet_id == "sheet123"
     assert ranges["'광고'!B2"] == "오류"
     assert ranges["'광고'!C2"] == "페이지 ID가 필요합니다."
+
+
+def test_public_sheet_remembers_created_ids(tmp_path):
+    text = "테스트명,변형,광고명\n여름,A,여름_A\n"
+    table = table_from_csv_text("sheet123", text, tmp_path)
+    rows = table.load_rows()
+    rows[0].meta_ad_id = "ad_9"
+    rows[0].status = "생성됨"
+    table.update(rows[0])
+    again = table_from_csv_text("sheet123", text, tmp_path).load_rows()
+    assert again[0].meta_ad_id == "ad_9"
+    assert again[0].status == "생성됨"
 
 
 def test_column_letter_and_sheet_names():

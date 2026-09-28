@@ -55,6 +55,28 @@ def test_retries_rate_limit_then_uses_user_message():
     assert "/act_10/adsets" in session.calls[1]["url"]
 
 
+def test_video_upload_uses_resumable_session():
+    session = FakeSession(
+        [
+            Response(
+                {
+                    "upload_session_id": "sess",
+                    "video_id": "vid_1",
+                    "start_offset": "0",
+                    "end_offset": "4",
+                }
+            ),
+            Response({"start_offset": "4", "end_offset": "4"}),
+            Response({"success": True}),
+        ]
+    )
+    client = MetaClient("token", "10", session=session, sleeper=lambda _seconds: None)
+    assert client.upload_video("clip.mp4", b"abcd", "video/mp4") == "vid_1"
+    assert session.calls[0]["url"].startswith("https://graph-video.facebook.com/")
+    assert "upload_phase" in session.calls[0]["data"]
+    assert session.calls[1]["files"]["video_file_chunk"][1] == b"abcd"
+
+
 def test_image_hash_and_creative_shape():
     session = FakeSession([Response({"images": {"a.png": {"hash": "h1"}}})])
     client = MetaClient("token", "10", session=session, sleeper=lambda _seconds: None)

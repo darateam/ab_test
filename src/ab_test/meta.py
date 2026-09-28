@@ -198,12 +198,48 @@ class MetaClient:
         return str(image_hash)
 
     def upload_video(self, filename: str, data: bytes, mime: str) -> str:
-        body = self._request(
+        started = self._request(
             "POST",
             f"{self.account_id}/advideos",
-            files={"source": (filename, data, mime)},
+            data=_form({"upload_phase": "start", "file_size": len(data)}),
+            host="https://graph-video.facebook.com",
+            timeout=300,
         )
-        return self._id(body)
+        session_id = started.get("upload_session_id")
+        video_id = started.get("video_id") or started.get("id")
+        if not session_id or not video_id:
+            raise MetaApiError("동영상 업로드 시작 응답에 세션 정보가 없습니다.")
+        start_offset = int(started.get("start_offset") or 0)
+        end_offset = int(started.get("end_offset") or 0)
+        while start_offset < end_offset:
+            chunk = data[start_offset:end_offset]
+            transferred = self._request(
+                "POST",
+                f"{self.account_id}/advideos",
+                data=_form(
+                    {
+                        "upload_phase": "transfer",
+                        "upload_session_id": session_id,
+                        "start_offset": start_offset,
+                    }
+                ),
+                files={"video_file_chunk": (filename, chunk, mime or "video/mp4")},
+                host="https://graph-video.facebook.com",
+                timeout=300,
+            )
+            next_start = int(transferred.get("start_offset") or 0)
+            next_end = int(transferred.get("end_offset") or 0)
+            if next_start <= start_offset and next_end == end_offset:
+                raise MetaApiError("동영상 업로드가 진행되지 않습니다.")
+            start_offset, end_offset = next_start, next_end
+        self._request(
+            "POST",
+            f"{self.account_id}/advideos",
+            data=_form({"upload_phase": "finish", "upload_session_id": session_id}),
+            host="https://graph-video.facebook.com",
+            timeout=300,
+        )
+        return str(video_id)
 
     def set_status(self, object_id: str, status: str, entity_type: str = "") -> None:
         del entity_type
@@ -247,11 +283,13 @@ class MetaClient:
         data: dict[str, Any] | None = None,
         params: dict[str, str] | None = None,
         files: dict | None = None,
+        host: str = "https://graph.facebook.com",
+        timeout: int = 60,
     ) -> dict[str, Any]:
-        url = f"https://graph.facebook.com/{self.version}/{path.lstrip('/')}"
+        url = f"{host.rstrip('/')}/{self.version}/{path.lstrip('/')}"
         last_error: MetaApiError | None = None
         for attempt in range(3):
-            response = self.session.request(method, url, data=data, params=params, files=files, timeout=60)
+            response = self.session.request(method, url, data=data, params=params, files=files, timeout=timeout)
             try:
                 body = response.json()
             except ValueError:
