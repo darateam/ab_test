@@ -1,5 +1,6 @@
 import csv
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from ab_test.cli import main
@@ -341,6 +342,14 @@ def test_sales_requires_pixel(tmp_path):
     report = Runner(settings()).run(table.load_rows(), table.parse_issues)
     assert not report.ok
     assert "픽셀" in report.results[0].message
+
+
+def test_landing_page_matches_the_sheet_offer():
+    page = (Path(__file__).resolve().parents[1] / "landing" / "index.html").read_text(encoding="utf-8")
+    assert "시원한 여름 세일" in page
+    assert "최대 50% 할인" in page
+    assert "여름 필수템 모음" in page
+    assert "무료 배송" in page
 
 
 def test_cli_runs_only_the_named_test(monkeypatch, tmp_path, capsys):

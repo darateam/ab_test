@@ -91,6 +91,8 @@ ab-test run --apply --allow-active
 
 로컬 소재 폴더로 시험할 때는 `--creatives examples/creatives`를 붙입니다. 폴더 파일명과 시트의 소재파일 열이 같아야 합니다.
 
+광고를 누르면 열리는 페이지는 `landing/`입니다. `main`에 올리면 Cloud Build가 프로젝트 `fredit-dashboard`의 Cloud Run 서비스 `ab-landing`(서울 리전)으로 배포합니다.
+
 ## 테스트
 
 ```bash
