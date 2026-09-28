@@ -114,9 +114,18 @@ def _open_creatives(settings: Settings):
     return None
 
 
-def _open_meta(settings: Settings) -> MetaClient:
-    return MetaClient(
+def _open_meta(settings: Settings):
+    if settings.meta_transport == "graph":
+        return MetaClient(
+            settings.meta_access_token,
+            settings.meta_ad_account_id,
+            settings.meta_api_version,
+        )
+    from ab_test.mcp_ads import McpAds
+
+    return McpAds(
         settings.meta_access_token,
         settings.meta_ad_account_id,
-        settings.meta_api_version,
+        api_version=settings.meta_api_version,
+        url=settings.meta_mcp_url,
     )

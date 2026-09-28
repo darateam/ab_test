@@ -273,11 +273,11 @@ class Runner:
             return
         try:
             if action.status == "ACTIVE" and row.meta_campaign_id:
-                self.meta.set_status(row.meta_campaign_id, "ACTIVE")
+                self.meta.set_status(row.meta_campaign_id, "ACTIVE", entity_type="campaign")
             if row.meta_adset_id:
-                self.meta.set_status(row.meta_adset_id, action.status)
+                self.meta.set_status(row.meta_adset_id, action.status, entity_type="adset")
             if row.meta_ad_id:
-                self.meta.set_status(row.meta_ad_id, action.status)
+                self.meta.set_status(row.meta_ad_id, action.status, entity_type="ad")
         except Exception as exc:
             self._fail(row, str(exc))
             return

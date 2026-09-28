@@ -102,7 +102,8 @@ class FakeMeta:
         self.calls.append(("ad", payload))
         return self._next("ad")
 
-    def set_status(self, object_id, status):
+    def set_status(self, object_id, status, entity_type=""):
+        del entity_type
         self.calls.append(("status", object_id, status))
 
     def create_split_test(self, business_id, payload):

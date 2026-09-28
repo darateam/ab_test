@@ -33,6 +33,8 @@ class Settings:
     timezone: str
     apply: bool = False
     allow_active: bool = False
+    meta_transport: str = "mcp"
+    meta_mcp_url: str = "https://mcp.facebook.com/ads"
 
     @property
     def uses_google_sheet(self) -> bool:
@@ -52,6 +54,9 @@ def load_settings() -> Settings:
         meta_page_id=os.getenv("META_PAGE_ID", "").strip(),
         meta_business_id=business_id,
         meta_api_version=os.getenv("META_API_VERSION", "v25.0").strip() or "v25.0",
+        meta_transport=os.getenv("META_TRANSPORT", "mcp").strip().lower() or "mcp",
+        meta_mcp_url=os.getenv("META_MCP_URL", "https://mcp.facebook.com/ads").strip()
+        or "https://mcp.facebook.com/ads",
         google_sheet_id=os.getenv("GOOGLE_SHEET_ID", "").strip(),
         google_sheet_range=os.getenv("GOOGLE_SHEET_RANGE", "").strip(),
         google_drive_folder_id=os.getenv("GOOGLE_DRIVE_FOLDER_ID", "").strip(),

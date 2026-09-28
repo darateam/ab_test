@@ -205,7 +205,8 @@ class MetaClient:
         )
         return self._id(body)
 
-    def set_status(self, object_id: str, status: str) -> None:
+    def set_status(self, object_id: str, status: str, entity_type: str = "") -> None:
+        del entity_type
         self._request("POST", object_id, data={"status": status})
 
     def create_split_test(self, business_id: str, payload: dict[str, Any]) -> str:
